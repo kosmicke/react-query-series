@@ -1,0 +1,4 @@
+.pokemon-detail__form {
+    display: flex;
+    gap: 1rem;
+}
