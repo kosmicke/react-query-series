@@ -1,10 +1,7 @@
-import { useEffect, useState } from "react";
-import {
-  getPokemonDetails,
-  PokemonDetails,
-} from "../../services/get-pokemon-details";
+import { getPokemonDetails } from "../../services/get-pokemon-details";
 
 import "./PokemonDetails.css";
+import { useQuery } from "@tanstack/react-query";
 
 interface PokemonDetailProps {
   id: number | undefined;
@@ -13,30 +10,11 @@ interface PokemonDetailProps {
 function PokemonDetail(props: PokemonDetailProps) {
   const { id } = props;
 
-  const [pokemon, setPokemon] = useState<PokemonDetails>();
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<Error | undefined>();
-
-  const fetchPokemon = async (pokemonId: number) => {
-    setIsLoading(true);
-    try {
-      const data = await getPokemonDetails(pokemonId);
-      setPokemon(data);
-    } catch (error) {
-      if (error instanceof Error) {
-        setError(error);
-      } else {
-        setError(new Error("An error occurred"));
-      }
-    }
-    setIsLoading(false);
-  };
-
-  useEffect(() => {
-    if (id) {
-      fetchPokemon(id);
-    }
-  }, [id]);
+  const { data, isLoading, isError, error } = useQuery({
+    queryKey: ["pokemon", id],
+    queryFn: () => getPokemonDetails(id!),
+    enabled: !!id,
+  });
 
   if (!id) {
     return <p>No pokémon selected.</p>;
@@ -46,29 +24,29 @@ function PokemonDetail(props: PokemonDetailProps) {
     return <p>Loading...</p>;
   }
 
-  if (error) {
+  if (isError) {
     return <p>Error: {error.message}</p>;
   }
 
-  if (!pokemon) {
+  if (!data) {
     return <h2>No pokemon found.</h2>;
   }
 
   return (
     <div>
-      <h2>{pokemon.name}</h2>
-      <img src={pokemon.sprites.front_default} alt={pokemon.name} />
+      <h2>{data.name}</h2>
+      <img src={data.sprites.front_default} alt={data.name} />
       <p>
-        <strong>Height</strong>: {pokemon.height}
+        <strong>Height</strong>: {data.height}
       </p>
       <p>
-        <strong>Weight</strong>: {pokemon.weight}
+        <strong>Weight</strong>: {data.weight}
       </p>
       <p>
         <strong>Abilities</strong>:
       </p>
       <ul>
-        {pokemon.abilities.map((ability) => (
+        {data.abilities.map((ability) => (
           <li key={ability.ability.name}>{ability.ability.name}</li>
         ))}
       </ul>

@@ -1,9 +1,6 @@
-import { useEffect, useState } from "react";
-import {
-  getPokemonsList,
-  type PokemonListItem,
-} from "../../services/get-pokemons-list";
+import { getPokemonsList } from "../../services/get-pokemons-list";
 import "./PokemonsList.css";
+import { useQuery } from "@tanstack/react-query";
 
 interface PokemonsListProps {
   onPokemonClick: (pokemonId: number) => void;
@@ -12,30 +9,12 @@ interface PokemonsListProps {
 function PokemonsList(props: PokemonsListProps) {
   const { onPokemonClick } = props;
 
-  const [pokemons, setPokemons] = useState<PokemonListItem[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<Error | undefined>();
+  const { data, isLoading, isError, error } = useQuery({
+    queryKey: ["pokemons"],
+    queryFn: getPokemonsList,
+  });
 
-  const fetchPokemons = async () => {
-    setIsLoading(true);
-    try {
-      const pokemons = await getPokemonsList();
-      setPokemons(pokemons);
-    } catch (error) {
-      if (error instanceof Error) {
-        setError(error);
-      } else {
-        setError(new Error("An error occurred"));
-      }
-    }
-    setIsLoading(false);
-  };
-
-  useEffect(() => {
-    fetchPokemons();
-  }, []);
-
-  if (error) {
+  if (isError) {
     return <p>Error: {error.message}</p>;
   }
 
@@ -43,14 +22,14 @@ function PokemonsList(props: PokemonsListProps) {
     return <p>Loading...</p>;
   }
 
-  if (!pokemons.length) {
+  if (!data?.length) {
     return <p>No pokémons found.</p>;
   }
 
   return (
     <div>
       <ul className="pokemon-list">
-        {pokemons.map((pokemon) => (
+        {data.map((pokemon) => (
           <li key={pokemon.name} onClick={() => onPokemonClick(pokemon.id)}>
             {pokemon.name}
           </li>
