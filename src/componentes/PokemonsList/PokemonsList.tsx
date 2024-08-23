@@ -1,41 +1,38 @@
 import { useEffect, useState } from "react";
 import {
   getPokemonsList,
-  type PokemonListItem,
 } from "../../services/get-pokemons-list";
 import "./PokemonsList.css";
+import { useQuery } from "@tanstack/react-query";
 
 interface PokemonsListProps {
   onPokemonClick: (pokemonId: number) => void;
 }
 
+const limit = 20;
+
 function PokemonsList(props: PokemonsListProps) {
   const { onPokemonClick } = props;
 
-  const [pokemons, setPokemons] = useState<PokemonListItem[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<Error | undefined>();
+  const [page, setPage] = useState(1)
+  const [maxPage, setMaxPage] = useState(0)
 
-  const fetchPokemons = async () => {
-    setIsLoading(true);
-    try {
-      const pokemons = await getPokemonsList();
-      setPokemons(pokemons);
-    } catch (error) {
-      if (error instanceof Error) {
-        setError(error);
-      } else {
-        setError(new Error("An error occurred"));
-      }
-    }
-    setIsLoading(false);
-  };
+  const { data, isLoading, isError, error } = useQuery({
+    queryKey: ["pokemons", page],
+    queryFn: () => {
+      const offset = (page - 1) * limit
+      return getPokemonsList({ limit, offset });
+    },
+  
+  })
 
   useEffect(() => {
-    fetchPokemons();
-  }, []);
+    if (data) {
+      setMaxPage(Math.ceil(data.count / limit))
+    }
+  },[data])
 
-  if (error) {
+  if (isError) {
     return <p>Error: {error.message}</p>;
   }
 
@@ -43,24 +40,32 @@ function PokemonsList(props: PokemonsListProps) {
     return <p>Loading...</p>;
   }
 
-  if (!pokemons.length) {
+  if (!data?.results.length) {
     return <p>No pokémons found.</p>;
   }
 
   return (
     <div>
       <ul className="pokemon-list">
-        {pokemons.map((pokemon) => (
+        {data.results.map((pokemon) => (
           <li key={pokemon.name} onClick={() => onPokemonClick(pokemon.id)}>
             {pokemon.name}
           </li>
         ))}
       </ul>
-      {/* <div className="pokemon-list__pagination">
-        <button>Previous</button>
-        <span>Page 1</span>
-        <button>Next</button>
-      </div> */}
+      <div className="pokemon-list__pagination">
+        <button 
+          disabled={page <= 1} 
+          onClick={() => setPage(prev => prev-1)}>
+            Previous
+        </button>
+        <span>Page {page}/{maxPage}</span>
+        <button 
+          disabled={page >= maxPage} 
+          onClick={() => setPage(prev => prev+1)}>
+            Next
+        </button>
+      </div>
     </div>
   );
 }

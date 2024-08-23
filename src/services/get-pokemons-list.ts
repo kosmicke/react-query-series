@@ -4,18 +4,32 @@ export interface PokemonListItem {
   url: string;
 }
 
-async function getPokemonsList() {
-  const response = await fetch("https://pokeapi.co/api/v2/pokemon");
+export interface Response {
+  results: PokemonListItem[];
+  count: number
+}
+
+export interface Params {
+  limit: number;
+  offset: number;
+}
+
+async function getPokemonsList(params: Params) {
+  const { limit, offset } = params;
+  const response = await fetch(`https://pokeapi.co/api/v2/pokemon?offset=${offset}&limit=${limit}`);
   const data = await response.json();
 
-  const list = data.results.map((pokemon: Omit<PokemonListItem, "id">) => {
+  const results = data.results.map((pokemon: Omit<PokemonListItem, "id">) => {
     return {
       ...pokemon,
       id: pokemon.url.split("/").slice(-2)[0],
     };
   });
 
-  return list as PokemonListItem[];
+  return {
+    results,
+    count: data.count,
+  } as Response
 }
 
 export { getPokemonsList };
