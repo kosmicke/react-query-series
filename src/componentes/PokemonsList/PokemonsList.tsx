@@ -3,7 +3,7 @@ import {
   getPokemonsList,
 } from "../../services/get-pokemons-list";
 import "./PokemonsList.css";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 
 interface PokemonsListProps {
   onPokemonClick: (pokemonId: number) => void;
@@ -17,14 +17,27 @@ function PokemonsList(props: PokemonsListProps) {
   const [page, setPage] = useState(1)
   const [maxPage, setMaxPage] = useState(0)
 
+  const queryClient = useQueryClient();
+
   const { data, isLoading, isError, error } = useQuery({
     queryKey: ["pokemons", page],
     queryFn: () => {
       const offset = (page - 1) * limit
       return getPokemonsList({ limit, offset });
     },
-  
   })
+
+  useEffect(() => {
+    if(page < maxPage){
+      const nextPage = page + 1
+      const offset = (nextPage - 1) * limit
+  
+      queryClient.prefetchQuery({
+        queryKey: ["pokemons", nextPage],
+        queryFn: () => getPokemonsList({ limit, offset }),
+      })
+    }
+  }, [maxPage, page, queryClient])
 
   useEffect(() => {
     if (data) {
@@ -62,7 +75,8 @@ function PokemonsList(props: PokemonsListProps) {
         <span>Page {page}/{maxPage}</span>
         <button 
           disabled={page >= maxPage} 
-          onClick={() => setPage(prev => prev+1)}>
+          onClick={() => setPage(prev => prev+1)}
+          >
             Next
         </button>
       </div>

@@ -1,14 +1,15 @@
 export interface PokemonData {
   name: string;
+  id: number;
 }
 
-async function editPokemonDetails(id: number, pokemonData: PokemonData) {
+async function editPokemonDetails(pokemonData: PokemonData) {
   const response = await fetch(
-    "https://jsonplaceholder.typicode.com/posts/" + id,
+    "https://jsonplaceholder.typicode.com/posts/" + pokemonData.id,
     {
-      method: "patch",
+      method: "PATCH",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(pokemonData),
+      body: JSON.stringify({ name: pokemonData.name }),
     }
   );
   const data = await response.json();
